@@ -1,9 +1,13 @@
 # Mobile classifier
 ## TLDR
 - CelebA dataset
-- class weighted datasampler for imbalance labels
+- class weighted data sampling for imbalanced labels
 - many small models have been tested
 - a bit of augmentation, AdamW, exponential lr decay, fp16, imagenet pretraining
+- onnx fp16 export
+- cpu inference with face detection
+- benchmarks
+- all in Docker
 
 ## Quick start
 **Training:**
@@ -31,10 +35,8 @@ Install docker 19.03 or newer
 `sudo docker pull digitman/mobile_classifier` or
 `sudo docker build -t mobile_classifier . `
 
-### Run contaner
-```sudo docker run --rm -it --gpus '"device=1"' -v `pwd`:/workspace \
-    -v /mnt/datasets/celeba:/data -p 8089:8089 \
-    --shm-size=2gb mobile_classifier /bin/bash```
+### Run container
+```sudo docker run --rm -it --gpus '"device=1"' -v `pwd`:/workspace  -v /mnt/datasets/celeba:/data -p 8089:8089 --shm-size=2gb mobile_classifier /bin/bash```
 
 ### For EDA
 **Run inside docker:**
@@ -42,9 +44,7 @@ Install docker 19.03 or newer
 `jupyter notebook --allow-root --no-browser --ip 0.0.0.0 --port 8089`
 
 ### Training models
-```sudo docker run --rm -it --gpus '"device=1"' -v `pwd`:/workspace \
-    -v /mnt/datasets/celeba:/data \
-    --shm-size=2gb mobile_classifier python train.py```
+```sudo docker run --rm -it --gpus '"device=1"' -v `pwd`:/workspace -v /mnt/datasets/celeba:/data --shm-size=2gb mobile_classifier python train.py```
     
 or change to:
 `python train.py --model_architecture mnasnet0_5`
@@ -82,17 +82,22 @@ My model of choice is **shufflenet_v2_x1_0** - quite small, not very fast, but
 |squeezenet1_1|**1.4Mb**|9ms|0.990|0.977|0.986|
 |mnasnet0_5|1.9Mb|9ms|0.985|0.965|0.970|
 |mobilenetv3_small_minimal_100|2.1Mb|**6ms**|0.988|0.972|0.984|
-|**shufflenet_v2_x1_0**|2.5Mb|12ms|0.993|**0.984**|**0.990**|
+|**shufflenet_v2_x1_0**|2.5Mb|12ms|**0.993**|**0.984**|**0.990**|
 |mobilenetv3_small_100|3Mb|10ms|0.990|0.978|0.987|
-|mobilenet_v2|4.4Mb|14ms|0.991|0.980|0.990|
+|mobilenet_v2|4.4Mb|14ms|0.991|0.980|**0.990**|
 |efficientnet_lite0|6.6Mb|16ms|**0.993**|0.983|0.989|
 
 Forward pass speed was tested on i7-6800K CPU, mean of 100 separate calls is
  presented.
 
-## Pretrained models
+## Pretrained weights
+You can download my weights for all models: https://github.com/EvgenyKashin/mobile-classifier/releases/download/v1.0/weights.tar
 
 ## Notebooks
+- EDA for models and dataset: https://github.com/EvgenyKashin/mobile-classifier/blob/master/notebooks/EDA.ipynb
+- Errors analysis of model: https://github.com/EvgenyKashin/mobile-classifier/blob/master/notebooks/Errors_analysis.ipynb
+- Sanity check for face detection: https://github.com/EvgenyKashin/mobile-classifier/blob/master/notebooks/Face_detection_check.ipynb
+- Sanity check for onnx models: https://github.com/EvgenyKashin/mobile-classifier/blob/master/notebooks/Onnx_check.ipynb
 
 ## FP16
 Nvidia apex was used for fp16 training. It was tested, that accuracy of
@@ -144,6 +149,8 @@ In general, the accuracy is very good, because the task is very simple. More
 - Now accuracy, f1 score and roc auc were the main metrics for choosing the best
  model on the test set. But it could be possible to use directly precison and
   recall to make fine grained choice of the threshold value of the classifier.
+- Add a confidence interval(bootstrapping or statistic criterion) for metrics
+ for better model selection.
 ### TODO:
 - make readme 'models' table generation and all model benchmarking automatically
 - replace 'print' to 'logger.log'
