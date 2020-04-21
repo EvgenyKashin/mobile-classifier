@@ -154,3 +154,4 @@ In general, the accuracy is very good, because the task is very simple. More
 ### TODO:
 - make readme 'models' table generation and all model benchmarking automatically
 - replace 'print' to 'logger.log'
+- add multiple folds splits for benchmarking metrics
